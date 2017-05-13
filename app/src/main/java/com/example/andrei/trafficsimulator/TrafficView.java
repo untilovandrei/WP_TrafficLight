@@ -24,10 +24,11 @@ public class TrafficView extends View{
     private Paint penTrees, penCrossLines, penIncont;
     int screenWidth,screenHeight;
     int roadWidth,x=0,y=0;
+    public final int TRAFFIC_LIGHT_HEIGHT=200;
+    public final int TRAFFIC_LIGHT_WIDHT=80;
     ArrayList<Bitmap> list=new ArrayList<>();
     Resources r = getResources();
     Bitmap car= BitmapFactory.decodeResource(r,R.drawable.car);
-
 
 
     float px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 50, r.getDisplayMetrics());
@@ -43,6 +44,7 @@ public class TrafficView extends View{
     @Override
     protected void onDraw(Canvas canvas) {
         drawEnviroment(canvas);
+
         canvas.drawBitmap(car,x,y,penTrees);
         invalidate();
         //x+=1;
