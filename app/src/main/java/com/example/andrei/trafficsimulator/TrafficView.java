@@ -24,11 +24,10 @@ public class TrafficView extends View{
     private Paint penTrees, penCrossLines, penIncont;
     int screenWidth,screenHeight;
     int roadWidth,x=0,y=0;
-    public final int TRAFFIC_LIGHT_HEIGHT=200;
-    public final int TRAFFIC_LIGHT_WIDHT=80;
     ArrayList<Bitmap> list=new ArrayList<>();
     ArrayList<Car> carsList=new ArrayList<>();
     Resources r = getResources();
+
 
 
 
@@ -47,12 +46,17 @@ public class TrafficView extends View{
     @Override
     protected void onDraw(Canvas canvas) {
         drawEnviroment(canvas);
-
         for(Car car:carsList){
             canvas.drawBitmap(car.getImage(),car.getCurrentPosition().getX(),car.getCurrentPosition().getY(),penTrees);
             moveCar(car);
         }
+
         invalidate();
+
+
+
+
+
 
     }
 
@@ -70,21 +74,21 @@ public class TrafficView extends View{
                 }
                 break;
             case Constants.MOVE_TOP:
-                 x=car.getCurrentPosition().getX();
-                 y=car.getCurrentPosition().getY();
-                 coord=new Coordinates(x,y-2);
+                x=car.getCurrentPosition().getX();
+                y=car.getCurrentPosition().getY();
+                coord=new Coordinates(x,y-2);
                 car.setCurrentPosition(coord);
                 break;
             case Constants.MOVE_LEFT:
-                 x=car.getCurrentPosition().getX();
-                 y=car.getCurrentPosition().getY();
-                 coord=new Coordinates(x-2,y);
+                x=car.getCurrentPosition().getX();
+                y=car.getCurrentPosition().getY();
+                coord=new Coordinates(x-2,y);
                 car.setCurrentPosition(coord);
                 break;
             case Constants.MOVE_RIGHT:
-                 x=car.getCurrentPosition().getX();
-                 y=car.getCurrentPosition().getY();
-                 coord=new Coordinates(x+2,y);
+                x=car.getCurrentPosition().getX();
+                y=car.getCurrentPosition().getY();
+                coord=new Coordinates(x+2,y);
                 car.setCurrentPosition(coord);
                 break;
         }
