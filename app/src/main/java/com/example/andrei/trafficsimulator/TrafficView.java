@@ -25,8 +25,9 @@ public class TrafficView extends View{
     int screenWidth,screenHeight;
     int roadWidth,x=0,y=0;
     ArrayList<Bitmap> list=new ArrayList<>();
+    ArrayList<Car> carsList=new ArrayList<>();
     Resources r = getResources();
-    Bitmap car= BitmapFactory.decodeResource(r,R.drawable.car);
+
 
 
 
@@ -40,22 +41,79 @@ public class TrafficView extends View{
     }
 
 
+
+
     @Override
     protected void onDraw(Canvas canvas) {
         drawEnviroment(canvas);
-        canvas.drawBitmap(car,x,y,penTrees);
-        invalidate();
-        if(y>=screenHeight){
-            y-=5;
-        }else {
-            y+=5;
+        for(Car car:carsList){
+            canvas.drawBitmap(car.getImage(),car.getCurrentPosition().getX(),car.getCurrentPosition().getY(),penTrees);
+            moveCar(car);
         }
+
+        invalidate();
+
+
+
 
 
 
     }
 
+    private void moveCar(Car car) {
+        int x, y;
+        Coordinates coord;
+        switch (car.getDirection()){
+            case Constants.MOVE_DOWN:
+                x=car.getCurrentPosition().getX();
+                y=car.getCurrentPosition().getY();
+                coord=new Coordinates(x,y+2);
+                car.setCurrentPosition(coord);
+                if(y>(screenHeight-roadWidth)/2+10 && car.getTurn()!=Constants.NO_TURN){
+                    performTurning(car);
+                }
+                break;
+            case Constants.MOVE_TOP:
+                 x=car.getCurrentPosition().getX();
+                 y=car.getCurrentPosition().getY();
+                 coord=new Coordinates(x,y-2);
+                car.setCurrentPosition(coord);
+                break;
+            case Constants.MOVE_LEFT:
+                 x=car.getCurrentPosition().getX();
+                 y=car.getCurrentPosition().getY();
+                 coord=new Coordinates(x-2,y);
+                car.setCurrentPosition(coord);
+                break;
+            case Constants.MOVE_RIGHT:
+                 x=car.getCurrentPosition().getX();
+                 y=car.getCurrentPosition().getY();
+                 coord=new Coordinates(x+2,y);
+                car.setCurrentPosition(coord);
+                break;
+        }
 
+    }
+
+    private void performTurning(Car car){
+        Bitmap bm;
+        switch(car.getTurn()){
+            case Constants.TURN_RIGHT:
+                switch(car.getDirection()){
+                    case Constants.MOVE_DOWN:
+                        bm=car.getImage();
+                        rotateBitmap(bm,90);
+                        Bitmap img= BitmapFactory.decodeResource(r,R.drawable.green_car_left);
+                        img=getResizedBitmap(img,160,90);
+                        car.setImage(img);
+                        car.setTurn(Constants.NO_TURN);
+                        car.setDirection(Constants.MOVE_LEFT);
+                        break;
+
+
+                }
+        }
+    }
 
 
     public void setup(){
@@ -74,7 +132,9 @@ public class TrafficView extends View{
         penIncont=new Paint();
         penIncont.setColor(Color.WHITE);
         penIncont.setStyle(Paint.Style.STROKE);
-        car=getResizedBitmap(car,90,160);
+
+        generateCars();
+
 
 
 
@@ -132,5 +192,27 @@ public class TrafficView extends View{
         bm.recycle();
         return resizedBitmap;
     }
+
+    public static Bitmap rotateBitmap(Bitmap source, float angle)
+    {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(angle);
+        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
+    }
+
+
+    private void generateCars() {
+        Coordinates init=new Coordinates(screenWidth/2-roadWidth/2,0);
+        Car car=new Car(init,init,2,7);
+        Bitmap img= BitmapFactory.decodeResource(r,R.drawable.green_car_down);
+        rotateBitmap(img,180);
+        img=getResizedBitmap(img,90,160);
+        car.setDirection(Constants.MOVE_DOWN);
+        car.setTurn(Constants.TURN_RIGHT);
+        car.setImage(img);
+        carsList.add(car);
+
+    }
+
 
 }
