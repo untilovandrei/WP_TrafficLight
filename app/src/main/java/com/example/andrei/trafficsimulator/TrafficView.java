@@ -45,7 +45,6 @@ public class TrafficView extends View{
         drawEnviroment(canvas);
         canvas.drawBitmap(car,x,y,penTrees);
         invalidate();
-        //x+=1;
         if(y>=screenHeight){
             y-=5;
         }else {
