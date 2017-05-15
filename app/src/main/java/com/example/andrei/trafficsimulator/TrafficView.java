@@ -28,6 +28,7 @@ import java.util.Random;
 
 public class TrafficView extends View{
 
+    //////Declare Variables/Constants
     private Paint penTrees, penCrossLines, penIncont;
     int screenWidth,screenHeight;
     static int speed=5;
