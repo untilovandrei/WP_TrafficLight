@@ -15,9 +15,10 @@ public class Car {
     private int turn;
     private int lane;
     private int state;
+    private int speed;
 
 
-    public Car( Coordinates initialPosition, Coordinates currentPosition, int direction, int turn,int lane,int state) {
+    public Car( Coordinates initialPosition, Coordinates currentPosition, int direction, int turn,int lane,int state, int speed) {
         //this.image = image;
         this.initialPosition = initialPosition;
         this.currentPosition = currentPosition;
@@ -25,6 +26,7 @@ public class Car {
         this.turn = turn;
         this.lane= lane;
         this.state= state;
+        this.speed=speed;
     }
 
 
@@ -82,5 +84,13 @@ public class Car {
 
     public void setState(int state) {
         this.state = state;
+    }
+
+    public int getSpeed() {
+        return speed;
+    }
+
+    public void setSpeed(int speed) {
+        this.speed = speed;
     }
 }
