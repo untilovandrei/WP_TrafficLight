@@ -13,14 +13,20 @@ public class Car {
     private Coordinates currentPosition;
     private int direction;
     private int turn;
+    private int lane;
+    private int state;
 
-    public Car( Coordinates initialPosition, Coordinates currentPosition, int direction, int turn) {
+
+    public Car( Coordinates initialPosition, Coordinates currentPosition, int direction, int turn,int lane,int state) {
         //this.image = image;
         this.initialPosition = initialPosition;
         this.currentPosition = currentPosition;
         this.direction = direction;
         this.turn = turn;
+        this.lane= lane;
+        this.state= state;
     }
+
 
     public Bitmap getImage() {
         return image;
@@ -60,5 +66,21 @@ public class Car {
 
     public void setTurn(int turn) {
         this.turn = turn;
+    }
+
+    public int getLane() {
+        return lane;
+    }
+
+    public void setLane(int lane) {
+        this.lane = lane;
+    }
+
+    public int getState() {
+        return state;
+    }
+
+    public void setState(int state) {
+        this.state = state;
     }
 }

@@ -12,5 +12,10 @@ public class Constants {
     static final int TURN_LEFT=5;
     static final int TURN_RIGHT=6;
     static final int NO_TURN=7;
+    static final int SIMPLE_CAR=8;
+    static final int POLICE_CAR=9;
+    static final int AMBULANCE=10;
+
+
 
 }

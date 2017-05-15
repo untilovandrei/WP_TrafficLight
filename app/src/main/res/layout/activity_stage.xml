@@ -15,7 +15,25 @@
      android:layout_height="50dp"
      android:orientation="horizontal"
      android:layout_alignParentBottom="true"
-     android:id="@+id/optionBar">
+     android:id="@+id/optionBar" >
+
+  <Button
+      android:id="@+id/btnIncreaseTrafficLightSpeed"
+      android:background="@color/colorPrimaryDark"
+      android:textColor="#ffff"
+      android:text="TL Speed + "
+      android:layout_height="wrap_content"
+      android:layout_width="wrap_content"
+      android:layout_margin="10dp" />
+
+  <Button
+      android:id="@+id/btnDecreaseTrafficLightSpeed"
+      android:background="@color/colorPrimaryDark"
+      android:textColor="#ffff"
+      android:text="TL Speed - "
+      android:layout_height="wrap_content"
+      android:layout_width="wrap_content"
+      android:layout_margin="10dp" />
 
  </LinearLayout>
 
