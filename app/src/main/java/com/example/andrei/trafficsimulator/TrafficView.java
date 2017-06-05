@@ -12,12 +12,12 @@ import android.graphics.Paint;
 import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.View;
-import android.widget.Button;
 
-import java.io.InputStream;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -29,6 +29,7 @@ import java.util.Random;
 public class TrafficView extends View{
 
     //////Declare Variables/Constants
+    int nrOfGeneratedCars=4;
     private Paint penTrees, penCrossLines, penIncont;
     int screenWidth,screenHeight;
     static int speed=5;
@@ -43,6 +44,11 @@ public class TrafficView extends View{
     public static long intervalRedGreenColor=20000;
     public static final long intervalChangeRate=500;
     public static final int pedestrianHeight=60;
+
+    public static  int leftStopLine;
+    public static  int rightStopLine;
+    public static  int topStopLine;
+    public static  int bottomStopLine;
 
     Bitmap trafficLightRed= BitmapFactory.decodeResource(r,R.drawable.semafor_rosu_h70);
     Bitmap trafficLightGalben= BitmapFactory.decodeResource(r,R.drawable.semafor_galben_h70);
@@ -71,48 +77,295 @@ public class TrafficView extends View{
         }
 
         refreshList();
-        //checkTrafficLights();
-
+       /* if(!specialCarsInList()){
+            checkTrafficLights();
+        } else {
+            unOrdinarBehavior();
+        }*/
+        checkTrafficLights();
 
         for(Car car:carsList){
             canvas.drawBitmap(car.getImage(),car.getCurrentPosition().getX(),car.getCurrentPosition().getY(),penTrees);
             moveCar(car);
-
         }
         movePedestrians();
         invalidate();
     }
 
+    private void unOrdinarBehavior() {
+        for(Car car : carsList){
+            int x=car.getCurrentPosition().getX();
+            int y=car.getCurrentPosition().getY();
+            if(car.getState()==Constants.SIMPLE_CAR){
+             if(car.getInitialDirection()==Constants.MOVE_LEFT || car.getInitialDirection()==Constants.MOVE_RIGHT){
+                 if(x<leftStopLine || x>rightStopLine){
+                     car.setSpeed(0);
+                 }
+             }
+
+             if(car.getInitialDirection()==Constants.MOVE_TOP || car.getInitialDirection()==Constants.MOVE_DOWN){
+                 if(y<leftStopLine || x>rightStopLine){
+                     car.setSpeed(0);
+                 }
+             }
+        }
+        }
+    }
+
+    private boolean specialCarsInList() {
+        for(Car car:carsList){
+            if(car.getState()!=Constants.SIMPLE_CAR){
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void checkTrafficLights() {
+
+
         for (int i = 0; i <carsList.size() ; i++) {
-            if(TrafficLight.horizontalRoadLightCurrentColorIsRed()){
-                if(carsList.get(i).getDirection()==Constants.MOVE_LEFT || carsList.get(i).getDirection()==Constants.MOVE_RIGHT){
-                    carsList.get(i).setSpeed(0);
+            Car exCar=carsList.get(i);
+            int xPos=exCar.getCurrentPosition().getX();
+            int yPos=exCar.getCurrentPosition().getY();
+            int d;
+            if(TrafficLight.allLightColorYellow() || TrafficLight.horizontalRoadLightCurrentColorIsRed()){
+                if(exCar.getDirection()==Constants.MOVE_RIGHT && exCar.hasPassedLine()==false){
+                    if(leftStopLine-xPos<100){
+                        exCar.setSpeed(0);
+                    }
+                } else if(exCar.getDirection()==Constants.MOVE_LEFT && exCar.hasPassedLine()==false) {
+                    if(xPos-rightStopLine<100){
+                        exCar.setSpeed(0);
+                    }
                 } else {
-                    carsList.get(i).setSpeed(speed);
+                    exCar.setSpeed(speed);
                 }
-            } else if(TrafficLight.verticalRoadLightCurrentColorIsRed()){
-                if(carsList.get(i).getDirection()==Constants.MOVE_TOP || carsList.get(i).getDirection()==Constants.MOVE_DOWN){
-                    carsList.get(i).setSpeed(0);
+                }
+                if(!TrafficLight.verticalRoadLightCurrentColorIsGreen()){
+                if(exCar.getDirection()==Constants.MOVE_TOP && exCar.hasPassedLine()==false){
+                    d=bottomStopLine-yPos;
+                    if(d<100 && d>0){
+                        exCar.setSpeed(0);
+                    }
+                } else if(exCar.getDirection()==Constants.MOVE_DOWN && exCar.hasPassedLine()==false){
+                    d=topStopLine-yPos;
+                    if(d<200 && d>100){
+                        exCar.setSpeed(0);
+                    }
                 } else {
-                    carsList.get(i).setSpeed(speed);
+
+                    exCar.setSpeed(speed);
                 }
             }
+
+
 
         }
     }
 
-    private void initiateMotion() {
+    private int initiateMotion() {
+            Car newCar=null;
+            Car lastCar=null;
+            carsList.add(generateCar());
 
-            for (int i = 0; i <5 ; i++) {
-                carsList.add(generateCar());
-                //addNewCar();
+            for (int i = 0; i < nrOfGeneratedCars-1 ; i++) {
+                int size=carsList.size();
+                lastCar=carsList.get(size-1);
+                if(TrafficLight.horizontalRoadLightCurrentColorIsRed()){
+                    carsList.add(getVerticalCar());
+                } else {
+                    carsList.add(getHorizontalCar());
+                }
             }
 
-
+        return 0;
     }
 
+    public void addSpecialCar() {
+        int policeAmbulance = new Random().nextInt(2);
 
+        int randomCoordinates;
+        Car car = null;
+        Coordinates coord = null;
+
+        if (policeAmbulance == 0) {
+
+        randomCoordinates = new Random().nextInt(8);
+        coord = positions.get(randomCoordinates);
+
+
+        Bitmap img;
+        int randomTurn;
+
+        switch (randomCoordinates) {
+
+            case 0: //firstTop
+                randomTurn = new Random().nextInt(2);
+                img = BitmapFactory.decodeResource(r, R.drawable.police_car_down);
+                img = getResizedBitmap(img, 90, 160);
+                if (randomTurn == 0) {
+                    car = new Car(coord, coord, Constants.MOVE_DOWN, Constants.NO_TURN, 1, Constants.POLICE_CAR, speed, Constants.MOVE_DOWN);
+                } else {
+                    car = new Car(coord, coord, Constants.MOVE_DOWN, Constants.TURN_RIGHT, 1, Constants.POLICE_CAR, speed, Constants.MOVE_DOWN);
+                }
+                car.setImage(img);
+                break;
+
+            case 1: //secondTop
+                img = BitmapFactory.decodeResource(r, R.drawable.police_car_down);
+                img = getResizedBitmap(img, 90, 160);
+                car = new Car(coord, coord, Constants.MOVE_DOWN, Constants.NO_TURN, 2, Constants.POLICE_CAR, speed, Constants.MOVE_DOWN);
+                car.setImage(img);
+                break;
+
+            case 2: //firstBottom
+                randomTurn = new Random().nextInt(2);
+                img = BitmapFactory.decodeResource(r, R.drawable.police_car_up);
+                img = getResizedBitmap(img, 90, 160);
+                if (randomTurn == 0) {
+                    car = new Car(coord, coord, Constants.MOVE_TOP, Constants.NO_TURN, 1, Constants.POLICE_CAR, speed, Constants.MOVE_TOP);
+                } else {
+                    car = new Car(coord, coord, Constants.MOVE_TOP, Constants.TURN_RIGHT, 1, Constants.POLICE_CAR, speed, Constants.MOVE_TOP);
+                }
+                car.setImage(img);
+                break;
+
+            case 3: //secondBottom
+                img = BitmapFactory.decodeResource(r, R.drawable.police_car_up);
+                img = getResizedBitmap(img, 90, 160);
+                car = new Car(coord, coord, Constants.MOVE_TOP, Constants.NO_TURN, 2, Constants.POLICE_CAR, speed, Constants.MOVE_TOP);
+                car.setImage(img);
+                break;
+
+            case 4: //firstLeft
+                randomTurn = new Random().nextInt(2);
+                img = BitmapFactory.decodeResource(r, R.drawable.police_car_right);
+                img = getResizedBitmap(img, 160, 90);
+                if (randomTurn == 0) {
+                    car = new Car(coord, coord, Constants.MOVE_RIGHT, Constants.NO_TURN, 1, Constants.POLICE_CAR, speed, Constants.MOVE_RIGHT);
+                } else {
+                    car = new Car(coord, coord, Constants.MOVE_RIGHT, Constants.TURN_RIGHT, 1, Constants.POLICE_CAR, speed, Constants.MOVE_RIGHT);
+                }
+                car.setImage(img);
+                break;
+
+            case 5: //secondLeft
+                img = BitmapFactory.decodeResource(r, R.drawable.police_car_right);
+                img = getResizedBitmap(img, 160, 90);
+                car = new Car(coord, coord, Constants.MOVE_RIGHT, Constants.NO_TURN, 2, Constants.POLICE_CAR, speed, Constants.MOVE_RIGHT);
+                car.setImage(img);
+                break;
+
+            case 6: //firstRight
+                randomTurn = new Random().nextInt(2);
+                img = BitmapFactory.decodeResource(r, R.drawable.police_car_left);
+                img = getResizedBitmap(img, 160, 90);
+                if (randomTurn == 0) {
+                    car = new Car(coord, coord, Constants.MOVE_LEFT, Constants.NO_TURN, 1, Constants.POLICE_CAR, speed, Constants.MOVE_LEFT);
+                } else {
+                    car = new Car(coord, coord, Constants.MOVE_LEFT, Constants.TURN_RIGHT, 1, Constants.POLICE_CAR, speed, Constants.MOVE_LEFT);
+                }
+                car.setImage(img);
+                break;
+
+            case 7: //secondRight
+                img = BitmapFactory.decodeResource(r, R.drawable.police_car_left);
+                img = getResizedBitmap(img, 160, 90);
+                car = new Car(coord, coord, Constants.MOVE_LEFT, Constants.NO_TURN, 2, Constants.POLICE_CAR, speed, Constants.MOVE_LEFT);
+                car.setImage(img);
+                break;
+
+
+        }
+    } else {
+            randomCoordinates = new Random().nextInt(8);
+            coord=positions.get(randomCoordinates);
+            Bitmap img;
+            int randomTurn;
+
+            switch(randomCoordinates){
+
+                case 0: //firstTop
+                    randomTurn=new Random().nextInt(2);
+                    img= BitmapFactory.decodeResource(r,R.drawable.ambulance_down);
+                    img=getResizedBitmap(img,90,160);
+                    if(randomTurn==0){
+                        car=new Car(coord,coord,Constants.MOVE_DOWN,Constants.NO_TURN,1,Constants.AMBULANCE,speed,Constants.MOVE_DOWN);
+                    }else {
+                        car=new Car(coord,coord,Constants.MOVE_DOWN,Constants.TURN_RIGHT,1,Constants.AMBULANCE,speed,Constants.MOVE_DOWN);
+                    }
+                    car.setImage(img);
+                    break;
+
+                case 1: //secondTop
+                    img= BitmapFactory.decodeResource(r,R.drawable.ambulance_down);
+                    img=getResizedBitmap(img,90,160);
+                    car=new Car(coord,coord,Constants.MOVE_DOWN,Constants.NO_TURN,2,Constants.AMBULANCE,speed,Constants.MOVE_DOWN);
+                    car.setImage(img);
+                    break;
+
+                case 2: //firstBottom
+                    randomTurn=new Random().nextInt(2);
+                    img= BitmapFactory.decodeResource(r,R.drawable.ambulance_up);
+                    img=getResizedBitmap(img,90,160);
+                    if(randomTurn==0){
+                        car=new Car(coord,coord,Constants.MOVE_TOP,Constants.NO_TURN,1,Constants.AMBULANCE,speed,Constants.MOVE_TOP);
+                    }else {
+                        car=new Car(coord,coord,Constants.MOVE_TOP,Constants.TURN_RIGHT,1,Constants.AMBULANCE,speed,Constants.MOVE_TOP);
+                    }
+                    car.setImage(img);
+                    break;
+
+                case 3: //secondBottom
+                    img= BitmapFactory.decodeResource(r,R.drawable.ambulance_up);
+                    img=getResizedBitmap(img,90,160);
+                    car=new Car(coord,coord,Constants.MOVE_TOP,Constants.NO_TURN,2,Constants.AMBULANCE,speed,Constants.MOVE_TOP);
+                    car.setImage(img);
+                    break;
+
+                case 4: //firstLeft
+                    randomTurn=new Random().nextInt(2);
+                    img= BitmapFactory.decodeResource(r,R.drawable.ambulance_right);
+                    img=getResizedBitmap(img,160,90);
+                    if(randomTurn==0){
+                        car=new Car(coord,coord,Constants.MOVE_RIGHT,Constants.NO_TURN,1,Constants.AMBULANCE,speed,Constants.MOVE_RIGHT);
+                    }else {
+                        car=new Car(coord,coord,Constants.MOVE_RIGHT,Constants.TURN_RIGHT,1,Constants.AMBULANCE,speed,Constants.MOVE_RIGHT);
+                    }
+                    car.setImage(img);
+                    break;
+
+                case 5: //secondLeft
+                    img= BitmapFactory.decodeResource(r,R.drawable.ambulance_right);
+                    img=getResizedBitmap(img,160,90);
+                    car=new Car(coord,coord,Constants.MOVE_RIGHT,Constants.NO_TURN,2,Constants.AMBULANCE,speed,Constants.MOVE_RIGHT);
+                    car.setImage(img);
+                    break;
+
+                case 6: //firstRight
+                    randomTurn=new Random().nextInt(2);
+                    img= BitmapFactory.decodeResource(r,R.drawable.ambulance_left);
+                    img=getResizedBitmap(img,160,90);
+                    if(randomTurn==0){
+                        car=new Car(coord,coord,Constants.MOVE_LEFT,Constants.NO_TURN,1,Constants.AMBULANCE,speed,Constants.MOVE_LEFT);
+                    }else {
+                        car=new Car(coord,coord,Constants.MOVE_LEFT,Constants.TURN_RIGHT,1,Constants.AMBULANCE,speed,Constants.MOVE_LEFT);
+                    }
+                    car.setImage(img);
+                    break;
+
+                case 7: //secondRight
+                    img= BitmapFactory.decodeResource(r,R.drawable.ambulance_left);
+                    img=getResizedBitmap(img,160,90);
+                    car=new Car(coord,coord,Constants.MOVE_LEFT,Constants.NO_TURN,2,Constants.AMBULANCE,speed,Constants.MOVE_LEFT);
+                    car.setImage(img);
+                    break;
+
+            }
+        }
+        carsList.add(car);
+    }
 
     private void refreshList() {
 
@@ -124,10 +377,53 @@ public class TrafficView extends View{
                     int y=extractedCar.getCurrentPosition().getY();
                     if(x<=-200 || x>screenWidth || y<=-200 || y>=screenHeight){
                         carsList.remove(i);
-                        Car genCar=generateCar();
-                        carsList.add(genCar);
+                        //Car genCar=generateCar();
+                        //carsList.add(genCar);
+                        int random=new Random().nextInt(20);
+                       if(!TrafficLight.horizontalRoadLightCurrentColorIsGreen()==true){
+                           if(!checkForHorizontalCars()){
+                              /* while(true){
+                                   Car c=getHorizontalCar();
+                                   if(c.getState()!=Constants.POLICE_CAR && c.getState()!=Constants.AMBULANCE){
+                                       carsList.add(c);
+                                       break;
+                                   }
+                               }*/
 
-                        //addNewCar();
+                               carsList.add(getHorizontalCar());
+                           } else{
+                               /*while(true){
+                                   Car c=getVerticalCar();
+                                   if(c.getState()!=Constants.POLICE_CAR && c.getState()!=Constants.AMBULANCE){
+                                       carsList.add(c);
+                                       break;
+                                   }
+                               }*/
+                               carsList.add(getVerticalCar());
+                           }
+
+                       } else if(!TrafficLight.verticalRoadLightCurrentColorIsGreen()==true){
+                           if(!checkForVerticalCars()){
+                               /*while(true){
+                                   Car c=getVerticalCar();
+                                   if(c.getState()!=Constants.POLICE_CAR && c.getState()!=Constants.AMBULANCE){
+                                       carsList.add(c);
+                                       break;
+                                   }
+                               }*/
+                               carsList.add(getVerticalCar());
+                           } else{
+                               /*while(true){
+                                   Car c=getHorizontalCar();
+                                   if(c.getState()!=Constants.POLICE_CAR && c.getState()!=Constants.AMBULANCE){
+                                       carsList.add(c);
+                                       break;
+                                   }
+                               }*/
+                               carsList.add(getHorizontalCar());
+                           }
+                       }
+
                     }
                 }
 
@@ -139,84 +435,126 @@ public class TrafficView extends View{
 
     }
 
-    private void addNewCar() {
-        Car genCar=null;
-        while(true){
-            genCar=generateCar();
-            if(TrafficLight.horizontalRoadLightCurrentColorIsGreen()){
-                if(genCar.getDirection()==Constants.MOVE_LEFT || genCar.getDirection()==Constants.MOVE_RIGHT ){
-                    break;
-                }
-            } else if(TrafficLight.verticalRoadLightCurrentColorIsGreen()){
-                if(genCar.getDirection()==Constants.MOVE_TOP || genCar.getDirection()==Constants.MOVE_DOWN ){
-                    break;
-                }
+    private boolean checkForHorizontalCars() {
+        for(int i=0; i<carsList.size();i++){
+            Car extract=carsList.get(i);
+            if(extract.getDirection()==Constants.MOVE_LEFT || extract.getDirection()==Constants.MOVE_RIGHT){
+                return true;
             }
         }
+        return false;
     }
 
+    private boolean checkForVerticalCars() {
+        for(int i=0; i<carsList.size();i++){
+            Car extract=carsList.get(i);
+            if(extract.getDirection()==Constants.MOVE_TOP || extract.getDirection()==Constants.MOVE_DOWN){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Car getVerticalCar(){
+        Car vertCar=null;
+        while(true){
+            vertCar=generateCar();
+            if(vertCar.getDirection()==Constants.MOVE_DOWN || vertCar.getDirection()==Constants.MOVE_TOP){
+                break;
+            }
+        }
+        return vertCar;
+    }
+
+    private Car getHorizontalCar(){
+        Car vertCar=null;
+
+                while(true){
+                    vertCar=generateCar();
+                    if(vertCar.getDirection()==Constants.MOVE_LEFT || vertCar.getDirection()==Constants.MOVE_RIGHT){
+                        break;
+                    }
+        }
+        return vertCar;
+    }
 
     private void moveCar(Car car) {
         int x, y;
         Coordinates coord;
-        switch (car.getDirection()){
+
+
+        switch (car.getDirection()) {
             case Constants.MOVE_DOWN:
-                x=car.getCurrentPosition().getX();
-                y=car.getCurrentPosition().getY();
-                coord=new Coordinates(x,y+speed);
+                x = car.getCurrentPosition().getX();
+                y = car.getCurrentPosition().getY();
+                coord = new Coordinates(x, y + car.getSpeed());
                 car.setCurrentPosition(coord);
-                if(car.getLane()==1){
-                    if(y>(screenHeight-roadWidth)/2+5 && car.getTurn()!=Constants.NO_TURN){
+  /**/
+                if (y - 100 > topStopLine) {
+                    car.setPassedLine(true);
+                }
+                if (car.getLane() == 1) {
+                    if (y > (screenHeight - roadWidth) / 2 + 5 && car.getTurn() != Constants.NO_TURN) {
                         performTurning(car);
                     }
-                } else if(car.getLane()==2) {
-                    if(y>(screenHeight/2-roadWidth/4+5) && car.getTurn()!=Constants.NO_TURN){
+
+                } else if (car.getLane() == 2) {
+                    if (y > (screenHeight / 2 - roadWidth / 4 + 5) && car.getTurn() != Constants.NO_TURN) {
                         performTurning(car);
                     }
                 }
 
                 break;
             case Constants.MOVE_TOP:
-                x=car.getCurrentPosition().getX();
-                y=car.getCurrentPosition().getY();
-                coord=new Coordinates(x,y-speed);
+                x = car.getCurrentPosition().getX();
+                y = car.getCurrentPosition().getY();
+                coord = new Coordinates(x, y - car.getSpeed());
                 car.setCurrentPosition(coord);
-                if(car.getLane()==1){
-                    if(y<(screenHeight/2+roadWidth/4+20) && car.getTurn()!=Constants.NO_TURN){
+                if (y + 50 < bottomStopLine) {
+                    car.setPassedLine(true);
+                }
+                if (car.getLane() == 1) {
+                    if (y < (screenHeight / 2 + roadWidth / 4 + 20) && car.getTurn() != Constants.NO_TURN) {
                         performTurning(car);
                     }
-                } else if(car.getLane()==2) {
-                    if(y<(screenHeight/2+20) && car.getTurn()!=Constants.NO_TURN){
+                } else if (car.getLane() == 2) {
+                    if (y < (screenHeight / 2 + 20) && car.getTurn() != Constants.NO_TURN) {
                         performTurning(car);
                     }
                 }
                 break;
             case Constants.MOVE_LEFT:
-                x=car.getCurrentPosition().getX();
-                y=car.getCurrentPosition().getY();
-                coord=new Coordinates(x-speed,y);
+                x = car.getCurrentPosition().getX();
+                y = car.getCurrentPosition().getY();
+                coord = new Coordinates(x - car.getSpeed(), y);
                 car.setCurrentPosition(coord);
-                if(car.getLane()==1){
-                    if(x<(screenWidth/2+roadWidth/4+20) && car.getTurn()!=Constants.NO_TURN){
+                if (x - 100 < (screenWidth / 2 + roadWidth / 4)) {
+                    car.setPassedLine(true);
+                }
+                if (car.getLane() == 1) {
+                    if (x < (screenWidth / 2 + roadWidth / 4 + 20) && car.getTurn() != Constants.NO_TURN) {
                         performTurning(car);
                     }
-                } else if(car.getLane()==2) {
-                    if(x<(screenWidth/2+20) && car.getTurn()!=Constants.NO_TURN){
+                } else if (car.getLane() == 2) {
+                    if (x < (screenWidth / 2 + 20) && car.getTurn() != Constants.NO_TURN) {
                         performTurning(car);
                     }
                 }
                 break;
             case Constants.MOVE_RIGHT:
-                x=car.getCurrentPosition().getX();
-                y=car.getCurrentPosition().getY();
-                coord=new Coordinates(x+speed,y);
+                x = car.getCurrentPosition().getX();
+                y = car.getCurrentPosition().getY();
+                coord = new Coordinates(x + car.getSpeed(), y);
                 car.setCurrentPosition(coord);
-                if(car.getLane()==1){
-                    if(x>(screenWidth-roadWidth)/2+5 && car.getTurn()!=Constants.NO_TURN){
+                if (x + 100 > (screenWidth - roadWidth) / 2) {
+                    car.setPassedLine(true);
+                }
+                if (car.getLane() == 1) {
+                    if (x > (screenWidth - roadWidth) / 2 + 5 && car.getTurn() != Constants.NO_TURN) {
                         performTurning(car);
                     }
-                } else if(car.getLane()==2) {
-                    if(x>(screenWidth/2-roadWidth/4+5) && car.getTurn()!=Constants.NO_TURN){
+                } else if (car.getLane() == 2) {
+                    if (x > (screenWidth / 2 - roadWidth / 4 + 5) && car.getTurn() != Constants.NO_TURN) {
                         performTurning(car);
                     }
                 }
@@ -224,7 +562,6 @@ public class TrafficView extends View{
         }
 
     }
-
 
     private void movePedestrians(){
         for(Pedestrian pedestrian:pedestriansList){
@@ -333,9 +670,6 @@ public class TrafficView extends View{
         }
     }
 
-
-
-
     public void setup(){
         screenWidth=getScreenWidth();
         screenHeight=getScreenHeight();
@@ -357,9 +691,17 @@ public class TrafficView extends View{
         //generateCars();
 
         initPedstrians();
+        setStopLines();
 
         //start timer
         timer.start();
+    }
+
+    private void setStopLines(){
+        leftStopLine=(screenWidth-roadWidth)/2;
+        rightStopLine=(screenWidth+roadWidth)/2;
+        topStopLine=(screenHeight-roadWidth)/2;
+        bottomStopLine=(screenHeight+roadWidth)/2;
     }
 
     private void generateInitialConditions(){
@@ -369,8 +711,8 @@ public class TrafficView extends View{
         secondBottom=new Coordinates(screenWidth/2+15,screenHeight);
         firstLeft=new Coordinates(-200,screenHeight/2+roadWidth/4+15);
         secondLeft=new Coordinates(-200,screenHeight/2+15);
-        firstRight=new Coordinates(screenWidth-170+200,screenHeight/2-roadWidth/2+15);
-        secondRight=new Coordinates(screenWidth-170+200,screenHeight/2-roadWidth/4+15);
+        firstRight=new Coordinates(screenWidth,screenHeight/2-roadWidth/2+15);
+        secondRight=new Coordinates(screenWidth,screenHeight/2-roadWidth/4+15);
         positions.add(firstTop);
         positions.add(secondTop);
         positions.add(firstBottom);
@@ -381,7 +723,6 @@ public class TrafficView extends View{
         positions.add(secondRight);
 
     }
-
 
     public void drawTrafficLights(Canvas canvas){
 
@@ -439,7 +780,6 @@ public class TrafficView extends View{
           //  }
         }
     }
-
 
     public void drawEnviroment(Canvas canvas){
         canvas.drawRect(0,0,(screenWidth-roadWidth)/2,(screenHeight-roadWidth)/2,penTrees);
@@ -510,69 +850,17 @@ public class TrafficView extends View{
         return resizedBitmap;
     }
 
-    public static Bitmap rotateBitmap(Bitmap source, float angle)
-    {
-        Matrix matrix = new Matrix();
-        matrix.postRotate(angle);
-        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
-    }
-
-
-    private void generateCars() {
-
-        /*Car car=new Car(secondTop,secondTop,Constants.MOVE_DOWN,Constants.TURN_RIGHT,2);
-        Bitmap img= BitmapFactory.decodeResource(r,R.drawable.green_car_down);
-        img=getResizedBitmap(img,90,160);
-        car.setImage(img);
-        carsList.add(car);
-        Car car2=new Car(firstTop,firstTop,Constants.MOVE_DOWN,Constants.TURN_RIGHT,1);
-        Bitmap img2= BitmapFactory.decodeResource(r,R.drawable.green_car_down);
-        img2=getResizedBitmap(img2,90,160);
-        car2.setImage(img2);
-        carsList.add(car2);
-        Car car3=new Car(firstBottom,firstBottom,Constants.MOVE_TOP,Constants.TURN_RIGHT,1);
-        Bitmap img3= BitmapFactory.decodeResource(r,R.drawable.green_car_up);
-        img3=getResizedBitmap(img3,90,160);
-        car3.setImage(img3);
-        carsList.add(car3);
-        Car car4=new Car(secondBottom,secondBottom,Constants.MOVE_TOP,Constants.TURN_RIGHT,2);
-        Bitmap img4= BitmapFactory.decodeResource(r,R.drawable.green_car_up);
-        img4=getResizedBitmap(img4,90,160);
-        car4.setImage(img4);
-        carsList.add(car4);
-        Car car6=new Car(firstLeft,firstLeft,Constants.MOVE_RIGHT,Constants.TURN_RIGHT,1);
-        Bitmap img6= BitmapFactory.decodeResource(r,R.drawable.green_car_right);
-        img6=getResizedBitmap(img6,160,90);
-        car6.setImage(img6);
-        carsList.add(car6);
-        Car car5=new Car(secondLeft,secondLeft,Constants.MOVE_RIGHT,Constants.TURN_RIGHT,2);
-        Bitmap img5= BitmapFactory.decodeResource(r,R.drawable.green_car_right);
-        img5=getResizedBitmap(img5,160,90);
-        car5.setImage(img5);
-        carsList.add(car5);
-        Car car7=new Car(firstRight,firstRight,Constants.MOVE_LEFT,Constants.TURN_RIGHT,1);
-        Bitmap img7= BitmapFactory.decodeResource(r,R.drawable.green_car_left);
-        img7=getResizedBitmap(img7,160,90);
-        car7.setImage(img7);
-        carsList.add(car7);
-        Car car8=new Car(secondRight,secondRight,Constants.MOVE_LEFT,Constants.TURN_RIGHT,2);
-        Bitmap img8= BitmapFactory.decodeResource(r,R.drawable.green_car_left);
-        img8=getResizedBitmap(img8,160,90);
-        car8.setImage(img8);
-        carsList.add(car8);*/
-
-    }
-
-
-
     private Car generateCar(){
         Car car=null;
+        int randomCoordinates=0;
         while(true){
             int choice=new Random().nextInt(25);
-            if(choice>0 && choice<=4){
+            if(choice==1){
+                Coordinates coord=null;
+                randomCoordinates = new Random().nextInt(8);
+                coord=positions.get(randomCoordinates);
 
-                int randomCoordinates = new Random().nextInt(8);
-                Coordinates coord=positions.get(randomCoordinates);
+
                 Bitmap img;
                 int randomTurn;
 
@@ -583,9 +871,9 @@ public class TrafficView extends View{
                         img= BitmapFactory.decodeResource(r,R.drawable.police_car_down);
                         img=getResizedBitmap(img,90,160);
                         if(randomTurn==0){
-                            car=new Car(coord,coord,Constants.MOVE_DOWN,Constants.NO_TURN,1,Constants.POLICE_CAR,speed);
+                            car=new Car(coord,coord,Constants.MOVE_DOWN,Constants.NO_TURN,1,Constants.POLICE_CAR,speed,Constants.MOVE_DOWN);
                         }else {
-                            car=new Car(coord,coord,Constants.MOVE_DOWN,Constants.TURN_RIGHT,1,Constants.POLICE_CAR,speed);
+                            car=new Car(coord,coord,Constants.MOVE_DOWN,Constants.TURN_RIGHT,1,Constants.POLICE_CAR,speed,Constants.MOVE_DOWN);
                         }
                         car.setImage(img);
                         break;
@@ -593,7 +881,7 @@ public class TrafficView extends View{
                     case 1: //secondTop
                         img= BitmapFactory.decodeResource(r,R.drawable.police_car_down);
                         img=getResizedBitmap(img,90,160);
-                        car=new Car(coord,coord,Constants.MOVE_DOWN,Constants.NO_TURN,2,Constants.POLICE_CAR,speed);
+                        car=new Car(coord,coord,Constants.MOVE_DOWN,Constants.NO_TURN,2,Constants.POLICE_CAR,speed,Constants.MOVE_DOWN);
                         car.setImage(img);
                         break;
 
@@ -602,9 +890,9 @@ public class TrafficView extends View{
                         img= BitmapFactory.decodeResource(r,R.drawable.police_car_up);
                         img=getResizedBitmap(img,90,160);
                         if(randomTurn==0){
-                            car=new Car(coord,coord,Constants.MOVE_TOP,Constants.NO_TURN,1,Constants.POLICE_CAR,speed);
+                            car=new Car(coord,coord,Constants.MOVE_TOP,Constants.NO_TURN,1,Constants.POLICE_CAR,speed,Constants.MOVE_TOP);
                         }else {
-                            car=new Car(coord,coord,Constants.MOVE_TOP,Constants.TURN_RIGHT,1,Constants.POLICE_CAR,speed);
+                            car=new Car(coord,coord,Constants.MOVE_TOP,Constants.TURN_RIGHT,1,Constants.POLICE_CAR,speed,Constants.MOVE_TOP);
                         }
                         car.setImage(img);
                         break;
@@ -612,7 +900,7 @@ public class TrafficView extends View{
                     case 3: //secondBottom
                         img= BitmapFactory.decodeResource(r,R.drawable.police_car_up);
                         img=getResizedBitmap(img,90,160);
-                        car=new Car(coord,coord,Constants.MOVE_TOP,Constants.NO_TURN,2,Constants.POLICE_CAR,speed);
+                        car=new Car(coord,coord,Constants.MOVE_TOP,Constants.NO_TURN,2,Constants.POLICE_CAR,speed,Constants.MOVE_TOP);
                         car.setImage(img);
                         break;
 
@@ -621,9 +909,9 @@ public class TrafficView extends View{
                         img= BitmapFactory.decodeResource(r,R.drawable.police_car_right);
                         img=getResizedBitmap(img,160,90);
                         if(randomTurn==0){
-                            car=new Car(coord,coord,Constants.MOVE_RIGHT,Constants.NO_TURN,1,Constants.POLICE_CAR,speed);
+                            car=new Car(coord,coord,Constants.MOVE_RIGHT,Constants.NO_TURN,1,Constants.POLICE_CAR,speed,Constants.MOVE_RIGHT);
                         }else {
-                            car=new Car(coord,coord,Constants.MOVE_RIGHT,Constants.TURN_RIGHT,1,Constants.POLICE_CAR,speed);
+                            car=new Car(coord,coord,Constants.MOVE_RIGHT,Constants.TURN_RIGHT,1,Constants.POLICE_CAR,speed,Constants.MOVE_RIGHT);
                         }
                         car.setImage(img);
                         break;
@@ -631,7 +919,7 @@ public class TrafficView extends View{
                     case 5: //secondLeft
                         img= BitmapFactory.decodeResource(r,R.drawable.police_car_right);
                         img=getResizedBitmap(img,160,90);
-                        car=new Car(coord,coord,Constants.MOVE_RIGHT,Constants.NO_TURN,2,Constants.POLICE_CAR,speed);
+                        car=new Car(coord,coord,Constants.MOVE_RIGHT,Constants.NO_TURN,2,Constants.POLICE_CAR,speed,Constants.MOVE_RIGHT);
                         car.setImage(img);
                         break;
 
@@ -640,9 +928,9 @@ public class TrafficView extends View{
                         img= BitmapFactory.decodeResource(r,R.drawable.police_car_left);
                         img=getResizedBitmap(img,160,90);
                         if(randomTurn==0){
-                            car=new Car(coord,coord,Constants.MOVE_LEFT,Constants.NO_TURN,1,Constants.POLICE_CAR,speed);
+                            car=new Car(coord,coord,Constants.MOVE_LEFT,Constants.NO_TURN,1,Constants.POLICE_CAR,speed,Constants.MOVE_LEFT);
                         }else {
-                            car=new Car(coord,coord,Constants.MOVE_LEFT,Constants.TURN_RIGHT,1,Constants.POLICE_CAR,speed);
+                            car=new Car(coord,coord,Constants.MOVE_LEFT,Constants.TURN_RIGHT,1,Constants.POLICE_CAR,speed,Constants.MOVE_LEFT);
                         }
                         car.setImage(img);
                         break;
@@ -650,16 +938,17 @@ public class TrafficView extends View{
                     case 7: //secondRight
                         img= BitmapFactory.decodeResource(r,R.drawable.police_car_left);
                         img=getResizedBitmap(img,160,90);
-                        car=new Car(coord,coord,Constants.MOVE_LEFT,Constants.NO_TURN,2,Constants.POLICE_CAR,speed);
+                        car=new Car(coord,coord,Constants.MOVE_LEFT,Constants.NO_TURN,2,Constants.POLICE_CAR,speed,Constants.MOVE_LEFT);
                         car.setImage(img);
                         break;
+
 
                 }
 
 
 
-            }else if(choice>4 && choice<21){
-                int randomCoordinates = new Random().nextInt(8);
+            }else if(choice>=2 && choice<=23){
+                randomCoordinates = new Random().nextInt(8);
                 Coordinates coord=positions.get(randomCoordinates);
                 Bitmap img;
                 int randomTurn;
@@ -671,9 +960,9 @@ public class TrafficView extends View{
                         img= BitmapFactory.decodeResource(r,R.drawable.green_car_down);
                         img=getResizedBitmap(img,90,160);
                         if(randomTurn==0){
-                            car=new Car(coord,coord,Constants.MOVE_DOWN,Constants.NO_TURN,1,Constants.SIMPLE_CAR,speed);
+                            car=new Car(coord,coord,Constants.MOVE_DOWN,Constants.NO_TURN,1,Constants.SIMPLE_CAR,speed,Constants.MOVE_DOWN);
                         }else {
-                            car=new Car(coord,coord,Constants.MOVE_DOWN,Constants.TURN_RIGHT,1,Constants.SIMPLE_CAR,speed);
+                            car=new Car(coord,coord,Constants.MOVE_DOWN,Constants.TURN_RIGHT,1,Constants.SIMPLE_CAR,speed,Constants.MOVE_DOWN);
                         }
                         car.setImage(img);
                         break;
@@ -681,7 +970,7 @@ public class TrafficView extends View{
                     case 1: //secondTop
                         img= BitmapFactory.decodeResource(r,R.drawable.green_car_down);
                         img=getResizedBitmap(img,90,160);
-                        car=new Car(coord,coord,Constants.MOVE_DOWN,Constants.NO_TURN,2,Constants.SIMPLE_CAR,speed);
+                        car=new Car(coord,coord,Constants.MOVE_DOWN,Constants.NO_TURN,2,Constants.SIMPLE_CAR,speed,Constants.MOVE_DOWN);
                         car.setImage(img);
                         break;
 
@@ -690,9 +979,9 @@ public class TrafficView extends View{
                         img= BitmapFactory.decodeResource(r,R.drawable.green_car_up);
                         img=getResizedBitmap(img,90,160);
                         if(randomTurn==0){
-                            car=new Car(coord,coord,Constants.MOVE_TOP,Constants.NO_TURN,1,Constants.SIMPLE_CAR,speed);
+                            car=new Car(coord,coord,Constants.MOVE_TOP,Constants.NO_TURN,1,Constants.SIMPLE_CAR,speed,Constants.MOVE_TOP);
                         }else {
-                            car=new Car(coord,coord,Constants.MOVE_TOP,Constants.TURN_RIGHT,1,Constants.SIMPLE_CAR,speed);
+                            car=new Car(coord,coord,Constants.MOVE_TOP,Constants.TURN_RIGHT,1,Constants.SIMPLE_CAR,speed,Constants.MOVE_TOP);
                         }
                         car.setImage(img);
                         break;
@@ -700,7 +989,7 @@ public class TrafficView extends View{
                     case 3: //secondBottom
                         img= BitmapFactory.decodeResource(r,R.drawable.green_car_up);
                         img=getResizedBitmap(img,90,160);
-                        car=new Car(coord,coord,Constants.MOVE_TOP,Constants.NO_TURN,2,Constants.SIMPLE_CAR,speed);
+                        car=new Car(coord,coord,Constants.MOVE_TOP,Constants.NO_TURN,2,Constants.SIMPLE_CAR,speed,Constants.MOVE_TOP);
                         car.setImage(img);
                         break;
 
@@ -709,9 +998,9 @@ public class TrafficView extends View{
                         img= BitmapFactory.decodeResource(r,R.drawable.green_car_right);
                         img=getResizedBitmap(img,160,90);
                         if(randomTurn==0){
-                            car=new Car(coord,coord,Constants.MOVE_RIGHT,Constants.NO_TURN,1,Constants.SIMPLE_CAR,speed);
+                            car=new Car(coord,coord,Constants.MOVE_RIGHT,Constants.NO_TURN,1,Constants.SIMPLE_CAR,speed,Constants.MOVE_RIGHT);
                         }else {
-                            car=new Car(coord,coord,Constants.MOVE_RIGHT,Constants.TURN_RIGHT,1,Constants.SIMPLE_CAR,speed);
+                            car=new Car(coord,coord,Constants.MOVE_RIGHT,Constants.TURN_RIGHT,1,Constants.SIMPLE_CAR,speed,Constants.MOVE_RIGHT);
                         }
                         car.setImage(img);
                         break;
@@ -719,7 +1008,7 @@ public class TrafficView extends View{
                     case 5: //secondLeft
                         img= BitmapFactory.decodeResource(r,R.drawable.green_car_right);
                         img=getResizedBitmap(img,160,90);
-                        car=new Car(coord,coord,Constants.MOVE_RIGHT,Constants.NO_TURN,2,Constants.SIMPLE_CAR,speed);
+                        car=new Car(coord,coord,Constants.MOVE_RIGHT,Constants.NO_TURN,2,Constants.SIMPLE_CAR,speed,Constants.MOVE_RIGHT);
                         car.setImage(img);
                         break;
 
@@ -728,9 +1017,9 @@ public class TrafficView extends View{
                         img= BitmapFactory.decodeResource(r,R.drawable.green_car_left);
                         img=getResizedBitmap(img,160,90);
                         if(randomTurn==0){
-                            car=new Car(coord,coord,Constants.MOVE_LEFT,Constants.NO_TURN,1,Constants.SIMPLE_CAR,speed);
+                            car=new Car(coord,coord,Constants.MOVE_LEFT,Constants.NO_TURN,1,Constants.SIMPLE_CAR,speed,Constants.MOVE_LEFT);
                         }else {
-                            car=new Car(coord,coord,Constants.MOVE_LEFT,Constants.TURN_RIGHT,1,Constants.SIMPLE_CAR,speed);
+                            car=new Car(coord,coord,Constants.MOVE_LEFT,Constants.TURN_RIGHT,1,Constants.SIMPLE_CAR,speed,Constants.MOVE_LEFT);
                         }
                         car.setImage(img);
                         break;
@@ -738,13 +1027,13 @@ public class TrafficView extends View{
                     case 7: //secondRight
                         img= BitmapFactory.decodeResource(r,R.drawable.green_car_left);
                         img=getResizedBitmap(img,160,90);
-                        car=new Car(coord,coord,Constants.MOVE_LEFT,Constants.NO_TURN,2,Constants.SIMPLE_CAR,speed);
+                        car=new Car(coord,coord,Constants.MOVE_LEFT,Constants.NO_TURN,2,Constants.SIMPLE_CAR,speed,Constants.MOVE_LEFT);
                         car.setImage(img);
                         break;
 
                 }
-            } else if(choice>=21 && choice<=24){
-                int randomCoordinates = new Random().nextInt(8);
+            } else if(choice==24){
+                randomCoordinates = new Random().nextInt(8);
                 Coordinates coord=positions.get(randomCoordinates);
                 Bitmap img;
                 int randomTurn;
@@ -756,9 +1045,9 @@ public class TrafficView extends View{
                         img= BitmapFactory.decodeResource(r,R.drawable.ambulance_down);
                         img=getResizedBitmap(img,90,160);
                         if(randomTurn==0){
-                            car=new Car(coord,coord,Constants.MOVE_DOWN,Constants.NO_TURN,1,Constants.AMBULANCE,speed);
+                            car=new Car(coord,coord,Constants.MOVE_DOWN,Constants.NO_TURN,1,Constants.AMBULANCE,speed,Constants.MOVE_DOWN);
                         }else {
-                            car=new Car(coord,coord,Constants.MOVE_DOWN,Constants.TURN_RIGHT,1,Constants.AMBULANCE,speed);
+                            car=new Car(coord,coord,Constants.MOVE_DOWN,Constants.TURN_RIGHT,1,Constants.AMBULANCE,speed,Constants.MOVE_DOWN);
                         }
                         car.setImage(img);
                         break;
@@ -766,7 +1055,7 @@ public class TrafficView extends View{
                     case 1: //secondTop
                         img= BitmapFactory.decodeResource(r,R.drawable.ambulance_down);
                         img=getResizedBitmap(img,90,160);
-                        car=new Car(coord,coord,Constants.MOVE_DOWN,Constants.NO_TURN,2,Constants.AMBULANCE,speed);
+                        car=new Car(coord,coord,Constants.MOVE_DOWN,Constants.NO_TURN,2,Constants.AMBULANCE,speed,Constants.MOVE_DOWN);
                         car.setImage(img);
                         break;
 
@@ -775,9 +1064,9 @@ public class TrafficView extends View{
                         img= BitmapFactory.decodeResource(r,R.drawable.ambulance_up);
                         img=getResizedBitmap(img,90,160);
                         if(randomTurn==0){
-                            car=new Car(coord,coord,Constants.MOVE_TOP,Constants.NO_TURN,1,Constants.AMBULANCE,speed);
+                            car=new Car(coord,coord,Constants.MOVE_TOP,Constants.NO_TURN,1,Constants.AMBULANCE,speed,Constants.MOVE_TOP);
                         }else {
-                            car=new Car(coord,coord,Constants.MOVE_TOP,Constants.TURN_RIGHT,1,Constants.AMBULANCE,speed);
+                            car=new Car(coord,coord,Constants.MOVE_TOP,Constants.TURN_RIGHT,1,Constants.AMBULANCE,speed,Constants.MOVE_TOP);
                         }
                         car.setImage(img);
                         break;
@@ -785,7 +1074,7 @@ public class TrafficView extends View{
                     case 3: //secondBottom
                         img= BitmapFactory.decodeResource(r,R.drawable.ambulance_up);
                         img=getResizedBitmap(img,90,160);
-                        car=new Car(coord,coord,Constants.MOVE_TOP,Constants.NO_TURN,2,Constants.AMBULANCE,speed);
+                        car=new Car(coord,coord,Constants.MOVE_TOP,Constants.NO_TURN,2,Constants.AMBULANCE,speed,Constants.MOVE_TOP);
                         car.setImage(img);
                         break;
 
@@ -794,9 +1083,9 @@ public class TrafficView extends View{
                         img= BitmapFactory.decodeResource(r,R.drawable.ambulance_right);
                         img=getResizedBitmap(img,160,90);
                         if(randomTurn==0){
-                            car=new Car(coord,coord,Constants.MOVE_RIGHT,Constants.NO_TURN,1,Constants.AMBULANCE,speed);
+                            car=new Car(coord,coord,Constants.MOVE_RIGHT,Constants.NO_TURN,1,Constants.AMBULANCE,speed,Constants.MOVE_RIGHT);
                         }else {
-                            car=new Car(coord,coord,Constants.MOVE_RIGHT,Constants.TURN_RIGHT,1,Constants.AMBULANCE,speed);
+                            car=new Car(coord,coord,Constants.MOVE_RIGHT,Constants.TURN_RIGHT,1,Constants.AMBULANCE,speed,Constants.MOVE_RIGHT);
                         }
                         car.setImage(img);
                         break;
@@ -804,7 +1093,7 @@ public class TrafficView extends View{
                     case 5: //secondLeft
                         img= BitmapFactory.decodeResource(r,R.drawable.ambulance_right);
                         img=getResizedBitmap(img,160,90);
-                        car=new Car(coord,coord,Constants.MOVE_RIGHT,Constants.NO_TURN,2,Constants.AMBULANCE,speed);
+                        car=new Car(coord,coord,Constants.MOVE_RIGHT,Constants.NO_TURN,2,Constants.AMBULANCE,speed,Constants.MOVE_RIGHT);
                         car.setImage(img);
                         break;
 
@@ -813,9 +1102,9 @@ public class TrafficView extends View{
                         img= BitmapFactory.decodeResource(r,R.drawable.ambulance_left);
                         img=getResizedBitmap(img,160,90);
                         if(randomTurn==0){
-                            car=new Car(coord,coord,Constants.MOVE_LEFT,Constants.NO_TURN,1,Constants.AMBULANCE,speed);
+                            car=new Car(coord,coord,Constants.MOVE_LEFT,Constants.NO_TURN,1,Constants.AMBULANCE,speed,Constants.MOVE_LEFT);
                         }else {
-                            car=new Car(coord,coord,Constants.MOVE_LEFT,Constants.TURN_RIGHT,1,Constants.AMBULANCE,speed);
+                            car=new Car(coord,coord,Constants.MOVE_LEFT,Constants.TURN_RIGHT,1,Constants.AMBULANCE,speed,Constants.MOVE_LEFT);
                         }
                         car.setImage(img);
                         break;
@@ -823,7 +1112,7 @@ public class TrafficView extends View{
                     case 7: //secondRight
                         img= BitmapFactory.decodeResource(r,R.drawable.ambulance_left);
                         img=getResizedBitmap(img,160,90);
-                        car=new Car(coord,coord,Constants.MOVE_LEFT,Constants.NO_TURN,2,Constants.AMBULANCE,speed);
+                        car=new Car(coord,coord,Constants.MOVE_LEFT,Constants.NO_TURN,2,Constants.AMBULANCE,speed,Constants.MOVE_LEFT);
                         car.setImage(img);
                         break;
 
@@ -833,7 +1122,8 @@ public class TrafficView extends View{
                 break;
             }
         }
-
+        Log.i("RANDOM = " , String.valueOf(randomCoordinates));
+        car.setPassedLine(false);
 
         return car;
     }
@@ -861,7 +1151,6 @@ public class TrafficView extends View{
         pedestriansList.add(pedestrian2);
     }
 
-
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         switch(keyCode){
@@ -877,3 +1166,7 @@ public class TrafficView extends View{
         return super.onKeyUp(keyCode, event);
     }
 }
+
+
+// !!!!!!
+// OK

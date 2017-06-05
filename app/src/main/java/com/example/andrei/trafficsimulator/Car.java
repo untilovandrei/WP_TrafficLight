@@ -12,13 +12,15 @@ public class Car {
     private Coordinates initialPosition;
     private Coordinates currentPosition;
     private int direction;
+    private int initialDirection;
     private int turn;
     private int lane;
     private int state;
     private int speed;
+    private boolean passedLine;
 
 
-    public Car( Coordinates initialPosition, Coordinates currentPosition, int direction, int turn,int lane,int state, int speed) {
+    public Car( Coordinates initialPosition, Coordinates currentPosition, int direction, int turn,int lane,int state, int speed,int initialDirection) {
         //this.image = image;
         this.initialPosition = initialPosition;
         this.currentPosition = currentPosition;
@@ -27,8 +29,16 @@ public class Car {
         this.lane= lane;
         this.state= state;
         this.speed=speed;
+        this.initialDirection=initialDirection;
     }
 
+    public boolean hasPassedLine() {
+        return passedLine;
+    }
+
+    public void setPassedLine(boolean passedLine) {
+        this.passedLine = passedLine;
+    }
 
     public Bitmap getImage() {
         return image;
@@ -92,5 +102,13 @@ public class Car {
 
     public void setSpeed(int speed) {
         this.speed = speed;
+    }
+
+    public int getInitialDirection() {
+        return initialDirection;
+    }
+
+    public void setInitialDirection(int initialDirection) {
+        this.initialDirection = initialDirection;
     }
 }

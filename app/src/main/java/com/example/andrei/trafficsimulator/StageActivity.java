@@ -13,6 +13,7 @@ public class StageActivity extends AppCompatActivity {
 
     private Button btnIncreaseTLSpeed;
     private Button btnDecreaseTLSpeed;
+    private Button btnAddSpecialCar,btnSimulateCollision;
 
     private TrafficView enviroment;
     @Override
@@ -23,6 +24,8 @@ public class StageActivity extends AppCompatActivity {
 
         btnIncreaseTLSpeed=(Button)findViewById(R.id.btnIncreaseTrafficLightSpeed);
         btnDecreaseTLSpeed=(Button)findViewById(R.id.btnDecreaseTrafficLightSpeed);
+        btnAddSpecialCar=(Button)findViewById(R.id.btnSpecial);
+        btnSimulateCollision=(Button)findViewById(R.id.btnCollision);
 
         btnIncreaseTLSpeed.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -60,6 +63,13 @@ public class StageActivity extends AppCompatActivity {
                 }
                 Toast.makeText(StageActivity.this, "Red/Green time(sec)="+TrafficView.intervalRedGreenColor/1000.0+ ", Yellow time(sec)="+TrafficView.intervalYellowColor/1000.0, Toast.LENGTH_LONG).show();
 
+            }
+        });
+
+        btnAddSpecialCar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                enviroment.addSpecialCar();
             }
         });
 

@@ -15,6 +15,7 @@
      android:layout_height="50dp"
      android:orientation="horizontal"
      android:layout_alignParentBottom="true"
+     android:gravity="center"
      android:id="@+id/optionBar" >
 
   <Button
@@ -22,18 +23,40 @@
       android:background="@color/colorPrimaryDark"
       android:textColor="#ffff"
       android:text="TL Speed + "
+      android:textSize="10sp"
       android:layout_height="wrap_content"
       android:layout_width="wrap_content"
-      android:layout_margin="10dp" />
+      android:layout_margin="5dp" />
 
   <Button
       android:id="@+id/btnDecreaseTrafficLightSpeed"
       android:background="@color/colorPrimaryDark"
       android:textColor="#ffff"
       android:text="TL Speed - "
+      android:textSize="10sp"
       android:layout_height="wrap_content"
       android:layout_width="wrap_content"
-      android:layout_margin="10dp" />
+      android:layout_margin="5dp" />
+
+  <Button
+      android:id="@+id/btnSpecial"
+      android:background="@color/colorPrimaryDark"
+      android:textColor="#ffff"
+      android:text="Add car"
+      android:textSize="10sp"
+      android:layout_height="wrap_content"
+      android:layout_width="wrap_content"
+      android:layout_margin="5dp" />
+
+  <Button
+      android:id="@+id/btnCollision"
+      android:background="@color/colorPrimaryDark"
+      android:textColor="#ffff"
+      android:text="Collision"
+      android:textSize="10sp"
+      android:layout_height="wrap_content"
+      android:layout_width="wrap_content"
+      android:layout_margin="5dp" />
 
  </LinearLayout>
 
